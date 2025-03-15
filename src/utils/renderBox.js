@@ -1,5 +1,5 @@
 import labels from "./labels.json";
-
+import wareHourseLabel from "./warehouse.json";
 /**
  * Render prediction boxes
  * @param {HTMLCanvasElement} canvasRef canvas tag reference
@@ -8,7 +8,7 @@ import labels from "./labels.json";
  * @param {Array} classes_data class array
  * @param {Array[Number]} ratios boxes ratio [xRatio, yRatio]
  */
-export const renderBoxes = (canvasRef, boxes_data, scores_data, classes_data, ratios) => {
+export const renderBoxes = (canvasRef, boxes_data, scores_data, classes_data, ratios, selectedModel) => {
   const ctx = canvasRef.getContext("2d");
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // clean canvas
 
@@ -24,7 +24,8 @@ export const renderBoxes = (canvasRef, boxes_data, scores_data, classes_data, ra
 
   for (let i = 0; i < scores_data.length; ++i) {
     // filter based on class threshold
-    const klass = labels[classes_data[i]];
+    const selectedLabels = selectedModel === "warehouse" ? wareHourseLabel : labels;
+    const klass = selectedLabels[classes_data[i]];
     const color = colors.get(classes_data[i]);
     const score = (scores_data[i] * 100).toFixed(1);
 

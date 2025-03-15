@@ -1,8 +1,7 @@
 import * as tf from "@tensorflow/tfjs";
 import { renderBoxes } from "./renderBox";
 import labels from "./labels.json";
-
-const numClass = labels.length;
+import wareHourseLabel from "./warehouse.json";
 
 /**
  * Preprocess image / frame before forwarded into the model
@@ -45,7 +44,7 @@ const preprocess = (source, modelWidth, modelHeight) => {
  * @param {HTMLCanvasElement} canvasRef canvas reference
  * @param {VoidFunction} callback function to run after detection process
  */
-export const detect = async (source, model, canvasRef, callback = () => {}) => {
+export const detect = async (source, model, canvasRef, selectedModel,callback = () => {}) => {
   const [modelWidth, modelHeight] = model.inputShape.slice(1, 3); // get model width and height
 
   tf.engine().startScope(); // start scoping tf engine
@@ -70,9 +69,12 @@ export const detect = async (source, model, canvasRef, callback = () => {}) => {
       )
       .squeeze();
   }); // process boxes [y1, x1, y2, x2]
+  // console.log({transRes, numClass})
+  const numClass = selectedModel === "warehouse" ? wareHourseLabel.length : labels.length;
 
   const [scores, classes] = tf.tidy(() => {
     // class scores
+
     const rawScores = transRes.slice([0, 0, 4], [-1, -1, numClass]).squeeze(0); // #6 only squeeze axis 0 to handle only 1 class models
     return [rawScores.max(1), rawScores.argMax(1)];
   }); // get max scores and classes index
@@ -83,7 +85,8 @@ export const detect = async (source, model, canvasRef, callback = () => {}) => {
   const scores_data = scores.gather(nms, 0).dataSync(); // indexing scores by nms index
   const classes_data = classes.gather(nms, 0).dataSync(); // indexing classes by nms index
 
-  renderBoxes(canvasRef, boxes_data, scores_data, classes_data, [xRatio, yRatio]); // render boxes
+  console.log({ boxes_data, scores_data, classes_data });
+  renderBoxes(canvasRef, boxes_data, scores_data, classes_data, [xRatio, yRatio], selectedModel); // render boxes
   tf.dispose([res, transRes, boxes, scores, classes, nms]); // clear memory
 
   callback();
@@ -97,7 +100,7 @@ export const detect = async (source, model, canvasRef, callback = () => {}) => {
  * @param {tf.GraphModel} model loaded YOLOv8 tensorflow.js model
  * @param {HTMLCanvasElement} canvasRef canvas reference
  */
-export const detectVideo = (vidSource, model, canvasRef) => {
+export const detectVideo = (vidSource, model, canvasRef, selectedModel) => {
   /**
    * Function to detect every frame from video
    */
@@ -108,7 +111,7 @@ export const detectVideo = (vidSource, model, canvasRef) => {
       return; // handle if source is closed
     }
 
-    detect(vidSource, model, canvasRef, () => {
+    detect(vidSource, model, canvasRef, selectedModel, () => {
       requestAnimationFrame(detectFrame); // get another frame
     });
   };
