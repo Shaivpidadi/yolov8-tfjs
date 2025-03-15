@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Webcam } from "../utils/webcam";
 
-const ButtonHandler = ({ imageRef, cameraRef, videoRef }) => {
+const ButtonHandler = ({ imageRef, cameraRef, videoRef, resetModel }) => {
   const [streaming, setStreaming] = useState(null); // streaming state
   const inputImageRef = useRef(null); // video input reference
   const inputVideoRef = useRef(null); // video input reference
@@ -103,6 +103,13 @@ const ButtonHandler = ({ imageRef, cameraRef, videoRef }) => {
         }}
       >
         {streaming === "camera" ? "Close" : "Open"} Webcam
+      </button>
+
+
+      <button
+        onClick={resetModel}
+      >
+        Go Back
       </button>
     </div>
   );

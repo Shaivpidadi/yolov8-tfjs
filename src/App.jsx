@@ -7,6 +7,7 @@ import { detect, detectVideo } from "./utils/detect";
 import "./style/App.css";
 
 const App = () => {
+  const [selectedModel, setSelectedModel] = useState(""); // selected model
   const [loading, setLoading] = useState({ loading: true, progress: 0 }); // loading state
   const [model, setModel] = useState({
     net: null,
@@ -19,13 +20,11 @@ const App = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // model configs
-  const modelName = "yolov8n";
-
   useEffect(() => {
+    if(!selectedModel) return 
     tf.ready().then(async () => {
       const yolov8 = await tf.loadGraphModel(
-        `${window.location.href}/${modelName}_web_model/model.json`,
+        `${window.location.href}/${selectedModel}_web_model/model.json`,
         {
           onProgress: (fractions) => {
             setLoading({ loading: true, progress: fractions }); // set loading fractions
@@ -45,45 +44,55 @@ const App = () => {
 
       tf.dispose([warmupResults, dummyInput]); // cleanup memory
     });
-  }, []);
+  }, [selectedModel]);
 
   return (
-    <div className="App">
-      {loading.loading && <Loader>Loading model... {(loading.progress * 100).toFixed(2)}%</Loader>}
-      <div className="header">
-        <h1>📷 YOLOv8 Live Detection App</h1>
-        <p>
-          YOLOv8 live detection application on browser powered by <code>tensorflow.js</code>
-        </p>
-        <p>
-          Serving : <code className="code">{modelName}</code>
-        </p>
-      </div>
 
-      <div className="content">
-        <img
-          src="#"
-          ref={imageRef}
-          onLoad={() => detect(imageRef.current, model, canvasRef.current)}
-        />
-        <video
-          autoPlay
-          muted
-          ref={cameraRef}
-          onPlay={() => detectVideo(cameraRef.current, model, canvasRef.current)}
-        />
-        <video
-          autoPlay
-          muted
-          ref={videoRef}
-          onPlay={() => detectVideo(videoRef.current, model, canvasRef.current)}
-        />
-        <canvas width={model.inputShape[1]} height={model.inputShape[2]} ref={canvasRef} />
-      </div>
+    <>
+      {!selectedModel ? (
+        <div className="App">
+          <select onChange={(e) => setSelectedModel(e.target.value)}>
+            <option value="">Select Model</option>
+            <option value="yolov8n">Object Detection</option>
+            <option value="warehouse">Warehouse Detection</option>
+          </select>
+        </div>
+      ) : (
+        <div className="App">
+          {loading.loading && <Loader>Loading model... {(loading.progress * 100).toFixed(2)}%</Loader>}
+          <div className="header">
+            <h1>📷 Live Detection App</h1>
+            <p>
+              Serving : <code className="code">{selectedModel}</code>
+            </p>
+          </div>
 
-      <ButtonHandler imageRef={imageRef} cameraRef={cameraRef} videoRef={videoRef} />
-    </div>
-  );
+          <div className="content">
+            <img
+              src="#"
+              ref={imageRef}
+              onLoad={() => detect(imageRef.current, model, canvasRef.current)}
+            />
+            <video
+              autoPlay
+              muted
+              ref={cameraRef}
+              onPlay={() => detectVideo(cameraRef.current, model, canvasRef.current)}
+            />
+            <video
+              autoPlay
+              muted
+              ref={videoRef}
+              onPlay={() => detectVideo(videoRef.current, model, canvasRef.current)}
+            />
+            <canvas width={model.inputShape[1]} height={model.inputShape[2]} ref={canvasRef} />
+          </div>
+
+          <ButtonHandler imageRef={imageRef} cameraRef={cameraRef} videoRef={videoRef} resetModel={() => setSelectedModel("")}/>
+        </div>
+      )}
+    </>
+  )
 };
 
 export default App;
